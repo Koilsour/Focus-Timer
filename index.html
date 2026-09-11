@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c1112" />
+  <meta name="description" content="A distraction-free Pomodoro Focus Timer with analytics, ambient soundscapes, and beautiful backgrounds." />
+  <title>Focus Timer — Deep Work</title>
+
+  <!-- Preload background images for fast display -->
+  <link rel="preload" href="assets/images/city.webp" as="image" />
+
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/analytics.css" />
+</head>
+<body>
+
+<!-- ── Background ──────────────────────────────────────────────────────── -->
+<div id="bgContainer" aria-hidden="true"></div>
+
+<!-- ── Main App ────────────────────────────────────────────────────────── -->
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Pomodoro Timer</h1>
+      <div class="session-badge" id="streakBadge" title="Daily Focus Streak — Consecutive active focus days">
+        <span class="streak-icon">🔥</span>
+        <strong id="streak">0</strong>
+        <span class="streak-unit">days</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="achievementsBtn" title="Achievements">🏆</button>
+      <button class="icon-btn" id="musicBtn" title="Soundscapes">♫</button>
+      <button class="icon-btn" id="tasksBtn" title="Analytics (☷)">☷</button>
+      <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+      <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="timer-area">
+      <!-- Mode tabs -->
+      <div class="tabs" role="tablist" aria-label="Timer mode">
+        <button class="tab active" data-mode="focus" role="tab" aria-selected="true">
+          Focus <span class="count" id="focusCount">0</span>
+        </button>
+        <button class="tab" data-mode="short" role="tab" aria-selected="false">
+          Short Break <span class="count" id="shortCount">0</span>
+        </button>
+        <button class="tab" data-mode="long" role="tab" aria-selected="false">
+          Long Break <span class="count" id="longCount">0</span>
+        </button>
+        <button class="tab" data-mode="stopwatch" role="tab" aria-selected="false">
+          Stopwatch
+        </button>
+      </div>
+
+      <!-- SVG ring timer -->
+      <div class="timer-ring" id="timerRing" role="timer" aria-live="off">
+        <!-- SVG progress ring -->
+        <svg class="ring-svg" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="ring-track"    cx="50" cy="50" r="46" />
+          <circle class="ring-progress" cx="50" cy="50" r="46" id="ringProgress"
+            stroke-dasharray="289.027"
+            stroke-dashoffset="289.027" />
+        </svg>
+
+        <div class="timer-content">
+          <div class="time" id="time" aria-label="Time remaining">25:00</div>
+          <div class="session-label">
+            <span class="dot"></span>
+            <span id="sessionText">Focus session</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="round-btn" id="resetBtn" title="Reset (R)" aria-label="Reset timer">□</button>
+        <button class="main-btn" id="startBtn" aria-label="Start or pause timer">
+          <span class="small-icon" aria-hidden="true">▶</span>
+          <span id="startText">START</span>
+        </button>
+        <button class="round-btn" id="skipBtn" title="Skip session" aria-label="Skip to next session">↪</button>
+      </div>
+
+      <p class="quote" id="quote">"The secret of getting ahead is getting started."</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="challenge">TODAY'S CHALLENGE</div>
+    <div class="footer-actions">
+      <button class="footer-btn" id="aboutBtn">ABOUT</button>
+      <button class="footer-btn" id="challengeBtn">CHALLENGE</button>
+    </div>
+  </footer>
+</div>
+
+
+<!-- ── Analytics Panel ──────────────────────────────────────────────────── -->
+<section class="analytics-page" id="analyticsPage" aria-label="Focus analytics" aria-hidden="true">
+  <div class="analytics-shell">
+    <header class="analytics-header">
+      <div class="analytics-title-wrap">
+        <h2>Analytics</h2>
+        <p>Track your focused study time — today, across weeks, and month by month.</p>
+      </div>
+      <div class="analytics-head-actions">
+        <select class="analytics-select" id="analyticsMonthSelect" aria-label="Select month"></select>
+        <button class="icon-btn" id="closeAnalytics" title="Close analytics" aria-label="Close analytics">×</button>
+      </div>
+    </header>
+
+    <!-- Summary cards -->
+    <div class="analytics-grid">
+      <div class="stat-card">
+        <div class="stat-label">Today</div>
+        <div class="stat-value" id="analyticsToday">0h 00m</div>
+        <div class="stat-sub" id="analyticsTodaySub">Focus time recorded today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last 7 days</div>
+        <div class="stat-value" id="analytics7Days">0h 00m</div>
+        <div class="stat-sub">Rolling seven-day total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">This week</div>
+        <div class="stat-value" id="analyticsThisWeek">0h 00m</div>
+        <div class="stat-sub" id="analyticsWeekRange">Monday — Sunday</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">This month</div>
+        <div class="stat-value" id="analyticsThisMonth">0h 00m</div>
+        <div class="stat-sub" id="analyticsMonthSub">Current month</div>
+      </div>
+    </div>
+
+    <!-- Daily chart -->
+    <section class="analytics-card">
+      <div class="analytics-card-head">
+        <div>
+          <h3>Daily focus time</h3>
+          <span>Last 7 calendar days</span>
+        </div>
+      </div>
+      <div class="day-chart" id="dailyChart"></div>
+    </section>
+
+    <!-- Weekly history -->
+    <section class="analytics-card">
+      <div class="analytics-card-head">
+        <div>
+          <h3>Weekly history</h3>
+          <span>Current week + previous 5 weeks</span>
+        </div>
+      </div>
+      <div class="week-list" id="weeklyList"></div>
+    </section>
+
+    <!-- Monthly -->
+    <div class="monthly-wrap">
+      <section class="analytics-card" style="margin-top:0">
+        <div class="analytics-card-head">
+          <div>
+            <h3 id="monthlyChartTitle">Monthly activity</h3>
+            <span>Focused hours by day</span>
+          </div>
+        </div>
+        <div class="month-bars" id="monthlyBars"></div>
+        <div class="month-day-labels" id="monthlyLabels"></div>
+      </section>
+
+      <section class="analytics-card" style="margin-top:0">
+        <div class="analytics-card-head">
+          <div>
+            <h3>Monthly report</h3>
+            <span id="monthlyReportSubtitle">Selected month</span>
+          </div>
+        </div>
+        <div class="month-summary">
+          <div class="small-stat"><div class="label">Total focus</div><div class="value" id="reportTotal">0h 00m</div></div>
+          <div class="small-stat"><div class="label">Average / day</div><div class="value" id="reportAverage">0m</div></div>
+          <div class="small-stat"><div class="label">Focused days</div><div class="value" id="reportDays">0</div></div>
+          <div class="small-stat"><div class="label">Best day</div><div class="value" id="reportBest">—</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── Overlay ───────────────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay" aria-hidden="true"></div>
+
+<!-- ── Mindfulness Overlay ────────────────────────────────────────────────── -->
+<div class="mindfulness-overlay" id="mindfulnessOverlay" aria-hidden="true">
+  <div class="mindfulness-modal">
+    <div class="mindfulness-header">
+      <h2 id="mindfulnessTitle">Take a breath</h2>
+      <button class="icon-btn" id="closeMindfulness" aria-label="Skip break">×</button>
+    </div>
+    
+    <!-- Box Breathing Visualizer -->
+    <div class="breathing-container" id="breathingContainer">
+      <div class="breathing-circle"></div>
+      <div class="breathing-text" id="breathingText">Ready</div>
+    </div>
+    
+    <div class="mindfulness-actions">
+      <button class="ghost-btn" id="skipMindfulness">Skip</button>
+      <button class="primary-btn" id="startMindfulness">Start Breathing</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Music Drawer ─────────────────────────────────────────────────────── -->
+<aside class="drawer" id="musicDrawer" aria-label="Soundscape mixer">
+  <div class="drawer-header">
+    <h2>Soundscapes</h2>
+    <button class="icon-btn" id="closeMusic" aria-label="Close soundscapes">×</button>
+  </div>
+  <div class="master">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Master volume</strong><span id="masterValue">55%</span>
+    </div>
+    <div class="slider-row">
+      <span>🔇</span>
+      <input id="masterSlider" type="range" min="0" max="100" value="55" aria-label="Master volume" />
+      <span>🔊</span>
+    </div>
+  </div>
+  <div class="sound-list">
+    <div class="sound-card" data-sound="rain">
+      <div class="sound-row">
+        <div class="sound-icon">🌧️</div>
+        <div class="sound-info"><div class="sound-name">Rain Noise</div><div class="sound-sub">Soft continuous rainfall</div></div>
+        <button class="toggle" aria-label="Toggle rain sound"></button>
+      </div>
+      <div class="slider-row"><span>🔈</span><input class="sound-slider" type="range" min="0" max="100" value="55" aria-label="Rain volume" /><span>🔊</span></div>
+    </div>
+    <div class="sound-card" data-sound="fire">
+      <div class="sound-row">
+        <div class="sound-icon">🔥</div>
+        <div class="sound-info"><div class="sound-name">Crackling Fire</div><div class="sound-sub">Warm fire + random crackles</div></div>
+        <button class="toggle" aria-label="Toggle fire sound"></button>
+      </div>
+      <div class="slider-row"><span>🔈</span><input class="sound-slider" type="range" min="0" max="100" value="48" aria-label="Fire volume" /><span>🔊</span></div>
+    </div>
+    <div class="sound-card" data-sound="library">
+      <div class="sound-row">
+        <div class="sound-icon">📚</div>
+        <div class="sound-info"><div class="sound-name">Library</div><div class="sound-sub">Quiet room, pages &amp; distant ambience</div></div>
+        <button class="toggle" aria-label="Toggle library sound"></button>
+      </div>
+      <div class="slider-row"><span>🔈</span><input class="sound-slider" type="range" min="0" max="100" value="38" aria-label="Library volume" /><span>🔊</span></div>
+    </div>
+    <div class="sound-card" data-sound="piano">
+      <div class="sound-row">
+        <div class="sound-icon">🎹</div>
+        <div class="sound-info"><div class="sound-name">Calm Piano</div><div class="sound-sub">Slow soft arpeggio</div></div>
+        <button class="toggle" aria-label="Toggle piano sound"></button>
+      </div>
+      <div class="slider-row"><span>🔈</span><input class="sound-slider" type="range" min="0" max="100" value="36" aria-label="Piano volume" /><span>🔊</span></div>
+    </div>
+  </div>
+  <p class="hint">Mix Rain + Fire + Piano for the ultimate deep work atmosphere.</p>
+</aside>
+
+
+<!-- ── Settings Modal ───────────────────────────────────────────────────── -->
+<section class="settings" id="settingsModal" role="dialog" aria-modal="true" aria-label="Timer settings">
+  <div class="drawer-header">
+    <h2>Timer Settings</h2>
+    <button class="icon-btn" id="closeSettings" aria-label="Close settings">×</button>
+  </div>
+  <div class="form-grid">
+    <div class="field"><label for="focusInput">Focus (minutes)</label><input id="focusInput" type="number" min="1" max="120" value="25" /></div>
+    <div class="field"><label for="shortInput">Short break</label><input id="shortInput" type="number" min="1" max="60" value="5" /></div>
+    <div class="field"><label for="longInput">Long break</label><input id="longInput" type="number" min="1" max="90" value="15" /></div>
+  </div>
+
+  <div class="presets-row">
+    <button class="ghost-btn preset-btn" data-preset="25,5,15">Pomodoro (25/5)</button>
+    <button class="ghost-btn preset-btn" data-preset="50,10,20">Deep Work (50/10)</button>
+    <button class="ghost-btn preset-btn" data-preset="90,20,30">Ultradian (90/20)</button>
+  </div>
+
+  <div class="settings-section-title">Background scene</div>
+  <div class="background-options" id="backgroundOptions">
+    <button class="background-option active" data-background="city" type="button">
+      <img class="background-thumb" src="assets/images/city_thumb.webp" alt="Night City background" loading="lazy" />
+      <span class="background-caption"><span>Night City</span><span class="background-check">✓</span></span>
+    </button>
+    <button class="background-option" data-background="castle" type="button">
+      <img class="background-thumb" src="assets/images/castle_thumb.webp" alt="Fantasy Castle background" loading="lazy" />
+      <span class="background-caption"><span>Fantasy Castle</span><span class="background-check">✓</span></span>
+    </button>
+  </div>
+
+  <div class="perf-row">
+    <div>
+      <label for="perfModeToggle">Performance Mode</label>
+      <small>Disables background scene image — saves CPU &amp; battery</small>
+    </div>
+    <button class="toggle ios-toggle" id="perfModeToggle" role="switch" aria-checked="false" aria-label="Toggle performance mode"></button>
+  </div>
+
+  <div class="settings-section-title">Focus Guard & Mindfulness</div>
+  
+  <div class="perf-row">
+    <div>
+      <label for="strictModeToggle">Strict Mode</label>
+      <small>Session fails if you pause or leave the tab</small>
+    </div>
+    <button class="toggle ios-toggle" id="strictModeToggle" role="switch" aria-checked="false" aria-label="Toggle strict mode"></button>
+  </div>
+
+  <div class="perf-row">
+    <div>
+      <label for="microBreaksToggle">Micro-Breaks</label>
+      <small>1-minute guided box breathing after focus sessions</small>
+    </div>
+    <button class="toggle ios-toggle" id="microBreaksToggle" role="switch" aria-checked="true" aria-label="Toggle micro-breaks"></button>
+  </div>
+
+  <div class="settings-section-title">Data Management</div>
+  <div class="perf-row danger-zone">
+    <div>
+      <label for="resetDataBtn">Reset All Data</label>
+      <small style="color: #ff5252;">Permanently clear analytics, streaks & settings</small>
+    </div>
+    <button class="ghost-btn reset-danger-btn" id="resetDataBtn" style="color: #ff5252; border-color: rgba(255,82,82,0.3);">Reset Data</button>
+  </div>
+
+  <div class="modal-actions">
+    <button class="ghost-btn" id="cancelSettings">Cancel</button>
+    <button class="primary-btn" id="saveSettings">Save settings</button>
+  </div>
+</section>
+
+
+<!-- ── Achievements Modal ────────────────────────────────────────────────── -->
+<section class="settings achievements-modal" id="achievementsModal" role="dialog" aria-modal="true" aria-label="Achievements">
+  <div class="drawer-header">
+    <h2>Achievements</h2>
+    <button class="icon-btn" id="closeAchievements" aria-label="Close achievements">×</button>
+  </div>
+  
+  <div class="achievements-summary">
+    <div class="achievement-stat">
+      <div class="stat-value" id="lifetimeHours">0</div>
+      <div class="stat-label">Total Hours</div>
+    </div>
+    <div class="achievement-stat">
+      <div class="stat-value" id="currentStreak">0</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+  </div>
+
+  <div class="settings-section-title">Focus Hours Badges</div>
+  <div class="badges-grid" id="hoursBadgesGrid">
+    <!-- Badges injected by JS -->
+  </div>
+
+  <div class="settings-section-title" style="margin-top:24px">Streak Badges</div>
+  <div class="badges-grid" id="streakBadgesGrid">
+    <!-- Badges injected by JS -->
+  </div>
+</section>
+
+
+<!-- ── Toast ─────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+<!-- ── Scripts (ES modules) ──────────────────────────────────────────────── -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
