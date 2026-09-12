@@ -58,18 +58,18 @@ function duration(mode) {
 // ── Timer engine ───────────────────────────────────────────────────────────────
 
 // Session-level focus-second accumulator (batch flush every 30s or on transition)
-let _focusSecsThisTick = 0;
 let _lastFlushTime = Date.now();
 
 const engine = new TimerEngine(
-  // onTick(remainingMs, remainingSec)
-  (timeMs, timeSec) => {
+  // onTick(remainingMs, remainingSec, deltaSec)
+  (timeMs, timeSec, deltaSec) => {
     state.remaining = timeSec;
 
-    // Accumulate focus seconds
+    // Accumulate focus seconds accurately, even after background throttling
     if (state.mode === "focus" || state.mode === "stopwatch") {
-      accumulateFocusSecond();
-      _focusSecsThisTick++;
+      for (let i = 0; i < deltaSec; i++) {
+        accumulateFocusSecond();
+      }
     }
 
     // Flush analytics batch every 30 seconds

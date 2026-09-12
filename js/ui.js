@@ -221,6 +221,7 @@ export function closeAnalyticsPage() {
 
 export function renderAchievements(lifetimeSeconds, currentStreak, badges) {
   const lifetimeHours = Math.floor(lifetimeSeconds / 3600);
+  const displayHours = (lifetimeSeconds / 3600).toLocaleString(undefined, { maximumFractionDigits: 1 });
   
   const $hoursGrid = $("hoursBadgesGrid");
   const $streakGrid = $("streakBadgesGrid");
@@ -229,7 +230,7 @@ export function renderAchievements(lifetimeSeconds, currentStreak, badges) {
 
   if (!$hoursGrid || !$streakGrid) return;
 
-  $lifetimeHours.textContent = lifetimeHours;
+  $lifetimeHours.textContent = displayHours;
   $currentStreak.textContent = currentStreak;
 
   let hoursHtml = "";

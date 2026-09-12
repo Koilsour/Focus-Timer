@@ -91,8 +91,9 @@ export class TimerEngine {
 
     // Only fire callbacks when the displayed second changes (minimal DOM updates)
     if (currentSec !== this._lastDisplayedSecond) {
+      const deltaSec = this._lastDisplayedSecond === -1 ? 0 : Math.abs(currentSec - this._lastDisplayedSecond);
       this._lastDisplayedSecond = currentSec;
-      this._onTick(currentMs, currentSec);
+      this._onTick(currentMs, currentSec, deltaSec);
     }
 
     if (!this._countUp && currentMs <= 0) {
